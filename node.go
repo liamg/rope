@@ -5,14 +5,16 @@ var _ Rope = (*Node)(nil)
 type Node struct {
 	left, right Rope
 	weight      int
+	lineWeight  int
 }
 
 func newNode(l, r Rope) Rope {
 	// TODO: calculate weights, lines and stuff here
 	return &Node{
-		left:   l,
-		right:  r,
-		weight: l.Length(),
+		left:       l,
+		right:      r,
+		weight:     l.Length(),
+		lineWeight: l.NewLineCount(),
 	}
 }
 
@@ -21,7 +23,7 @@ func (n Node) String() string {
 }
 
 func (n Node) Length() int {
-	return n.left.Length() + n.right.Length()
+	return n.weight + n.right.Length()
 }
 
 func (n Node) Append(r Rope) Rope {
@@ -72,21 +74,69 @@ func (n Node) Sub(start, end int) Rope {
 }
 
 func (n Node) Index(r rune) int {
-	//TODO implement me
-	panic("implement me")
+	if index := n.left.Index(r); index >= 0 {
+		return index
+	}
+	return n.weight + n.right.Index(r)
 }
 
 func (n Node) LastIndex(r rune) int {
-	//TODO implement me
-	panic("implement me")
+	if index := n.right.LastIndex(r); index >= 0 {
+		return n.weight + index
+	}
+	return n.left.LastIndex(r)
 }
 
 func (n Node) At(i int) rune {
-	//TODO implement me
-	panic("implement me")
+	if i < n.weight {
+		return n.left.At(i)
+	}
+	return n.right.At(i - n.weight)
+}
+
+func (n Node) Line(l int) Rope {
+	if l < n.lineWeight {
+		return n.left.Line(l)
+	} else if l > n.lineWeight {
+		return n.right.Line(l - n.lineWeight)
+	}
+	return n.left.Line(l).Append(n.right.Line(l - n.lineWeight))
+}
+
+func (n Node) NewLineCount() int {
+	return n.lineWeight + n.right.NewLineCount()
+}
+
+func (n Node) Depth() int {
+	l := n.left.Depth()
+	r := n.right.Depth()
+	if l >= r {
+		return l + 1
+	}
+	return r + 1
 }
 
 func (n Node) Balance() Rope {
-	//TODO implement me
-	panic("implement me")
+	d := n.Depth()
+	if d < len(fibonacci) && fibonacci[d+2] < n.weight {
+		return n
+	}
+	leaves := n.leaves()
+	return merge(leaves, 0, len(leaves))
+}
+
+func (n Node) leaves() []Rope {
+	return append(n.left.leaves(), n.right.leaves()...)
+}
+
+func merge(leaves []Rope, start, end int) Rope {
+	rng := end - start
+	if rng == 1 {
+		return leaves[start]
+	}
+	if rng == 2 {
+		return newNode(leaves[start], leaves[start+1])
+	}
+	mid := start + (rng / 2)
+	return newNode(merge(leaves, start, mid), merge(leaves, mid, end))
 }

@@ -5,8 +5,7 @@ import "strings"
 var _ Rope = (*Leaf)(nil)
 
 type Leaf struct {
-	data     []rune
-	leafSize int
+	data []rune
 }
 
 func (l Leaf) String() string {
@@ -26,6 +25,12 @@ func (l Leaf) Prepend(n Rope) Rope {
 }
 
 func (l Leaf) Split(at int) (Rope, Rope) {
+	if at < 0 {
+		at = 0
+	}
+	if at > len(l.data) {
+		at = len(l.data)
+	}
 	return &Leaf{
 			data: l.data[:at],
 		}, &Leaf{
@@ -85,11 +90,21 @@ func (l Leaf) Line(line int) Rope {
 }
 
 func (l Leaf) Balance() Rope {
-	if l.leafSize == 0 || len(l.data) <= l.leafSize {
-		return l
+	return l
+}
+
+func (l Leaf) NewLineCount() int {
+	if len(l.data) == 0 {
+		return 0
 	}
-	return newNode(
-		(&Leaf{data: l.data[:l.leafSize]}).Balance(),
-		(&Leaf{data: l.data[l.leafSize:]}).Balance(),
-	)
+	return strings.Count(l.String(), "\n")
+
+}
+
+func (l Leaf) Depth() int {
+	return 1
+}
+
+func (l Leaf) leaves() []Rope {
+	return []Rope{l}
 }

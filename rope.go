@@ -2,12 +2,13 @@ package rope
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"os"
 )
 
-// Rope is a data structure for efficiently storing and manipulating very long strings.
+// Rope is a data structure for efficiently storing and manipulating UTF-8 text.
 // It is a binary tree where each leaf node contains a string of runes.
-// The data type used is rune, meaning that it can store any Unicode code point.
 // The length of the string is the sum of the lengths of the strings in the leaf nodes.
 // The tree is balanced so that the length of the string in each leaf node is roughly the same.
 // This allows for fast indexing and slicing operations.
@@ -33,6 +34,8 @@ import (
 //
 // Line returns the line at the given (zero-based) index.
 //
+// NewLineCount returns the number of new lines in the tree.
+//
 // Balance the tree, using the leaf size as the maximum length of a leaf node.
 type Rope interface {
 	String() string
@@ -45,10 +48,29 @@ type Rope interface {
 	Index(rune) int
 	LastIndex(rune) int
 	Line(int) Rope
+	NewLineCount() int
 	Balance() Rope
+	Depth() int
+
+	leaves() []Rope
 }
 
-func New(r io.Reader, leafSize int) (Rope, error) {
+// FromFile reads a file into a rope.
+func FromFile(path string) (Rope, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+	r, err := FromReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file: %w", err)
+	}
+	return r, nil
+}
+
+// FromReader reads a reader into a rope.
+func FromReader(r io.Reader) (Rope, error) {
 	// pessimistically allocate enough room for 1:1 ratio of byte:rune
 	data := make([]rune, 0, bufio.NewReader(r).Size())
 	for {
@@ -62,21 +84,20 @@ func New(r io.Reader, leafSize int) (Rope, error) {
 		data = append(data, []rune(s)...)
 	}
 	return &Leaf{
-		leafSize: leafSize,
-		data:     data,
+		data: data,
 	}, nil
 }
 
-func NewFromString(s string, leafSize int) Rope {
+// FromString creates a rope from a string.
+func FromString(s string) Rope {
 	return (&Leaf{
-		data:     []rune(s),
-		leafSize: leafSize,
+		data: []rune(s),
 	}).Balance()
 }
 
-func NewFromRune(r rune, leafSize int) Rope {
+// FromRunes creates a rope from a slice of runes.
+func FromRune(r rune) Rope {
 	return &Leaf{
-		data:     []rune{r},
-		leafSize: leafSize,
+		data: []rune{r},
 	}
 }
