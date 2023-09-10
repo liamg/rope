@@ -74,7 +74,10 @@ func (l Leaf) At(i int) rune {
 }
 
 func (l Leaf) Line(line int) Rope {
-	vl := 1
+	if line < 0 || line > l.NewLineCount() {
+		return newLeaf(nil)
+	}
+	vl := 0
 	var start, end int
 	for i, r := range l.data {
 		if r == '\n' {
