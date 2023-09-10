@@ -57,7 +57,7 @@ func (n Node) Sub(start, end int) Rope {
 		end = n.Length()
 	}
 	if start >= end {
-		return &Leaf{}
+		return newLeaf(nil)
 	}
 	if start < n.weight && end < n.weight {
 		// sub left
@@ -139,4 +139,8 @@ func merge(leaves []Rope, start, end int) Rope {
 	}
 	mid := start + (rng / 2)
 	return newNode(merge(leaves, start, mid), merge(leaves, mid, end))
+}
+
+func (n Node) Data() []rune {
+	return append(n.left.Data(), n.right.Data()...)
 }

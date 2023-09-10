@@ -51,6 +51,7 @@ type Rope interface {
 	NewLineCount() int
 	Balance() Rope
 	Depth() int
+	Data() []rune
 
 	leaves() []Rope
 }
@@ -83,21 +84,15 @@ func FromReader(r io.Reader) (Rope, error) {
 		}
 		data = append(data, []rune(s)...)
 	}
-	return &Leaf{
-		data: data,
-	}, nil
+	return newLeaf(data), nil
 }
 
 // FromString creates a rope from a string.
 func FromString(s string) Rope {
-	return (&Leaf{
-		data: []rune(s),
-	}).Balance()
+	return newLeaf([]rune(s))
 }
 
-// FromRunes creates a rope from a slice of runes.
+// FromRune creates a rope from a single rune
 func FromRune(r rune) Rope {
-	return &Leaf{
-		data: []rune{r},
-	}
+	return newLeaf([]rune{r})
 }

@@ -4,8 +4,16 @@ import "strings"
 
 var _ Rope = (*Leaf)(nil)
 
+const maxLeafSize = 256
+
 type Leaf struct {
 	data []rune
+}
+
+func newLeaf(data []rune) Rope {
+	return &Leaf{
+		data: data,
+	}
 }
 
 func (l Leaf) String() string {
@@ -17,10 +25,16 @@ func (l Leaf) Length() int {
 }
 
 func (l Leaf) Append(n Rope) Rope {
+	if l.Length()+n.Length() <= maxLeafSize {
+		return newLeaf(append(l.data, n.Data()...))
+	}
 	return newNode(l, n)
 }
 
 func (l Leaf) Prepend(n Rope) Rope {
+	if l.Length()+n.Length() <= maxLeafSize {
+		return newLeaf(append(n.Data(), l.data...))
+	}
 	return newNode(n, l)
 }
 
@@ -31,11 +45,7 @@ func (l Leaf) Split(at int) (Rope, Rope) {
 	if at > len(l.data) {
 		at = len(l.data)
 	}
-	return &Leaf{
-			data: l.data[:at],
-		}, &Leaf{
-			data: l.data[at:],
-		}
+	return newLeaf(l.data[:at]), newLeaf(l.data[at:])
 }
 
 func (l Leaf) Sub(start, end int) Rope {
@@ -45,9 +55,7 @@ func (l Leaf) Sub(start, end int) Rope {
 	if end > len(l.data) {
 		end = len(l.data)
 	}
-	return &Leaf{
-		data: l.data[start:end],
-	}
+	return newLeaf(l.data[start:end])
 }
 
 func (l Leaf) Index(r rune) int {
@@ -75,18 +83,14 @@ func (l Leaf) Line(line int) Rope {
 				start = i + 1
 			} else if vl == line+1 {
 				end = i
-				return &Leaf{
-					data: l.data[start:end],
-				}
+				return newLeaf(l.data[start:end])
 			}
 		}
 	}
 	if start == 0 && line == 1 {
 		return &l
 	}
-	return &Leaf{
-		data: l.data[start:],
-	}
+	return newLeaf(l.data[start:])
 }
 
 func (l Leaf) Balance() Rope {
@@ -107,4 +111,8 @@ func (l Leaf) Depth() int {
 
 func (l Leaf) leaves() []Rope {
 	return []Rope{l}
+}
+
+func (l Leaf) Data() []rune {
+	return l.data
 }
