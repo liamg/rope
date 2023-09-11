@@ -129,28 +129,51 @@ func TestNode_At(t *testing.T) {
 }
 
 func TestNode_Balance(t *testing.T) {
-	type fields struct {
-		left       Rope
-		right      Rope
-		weight     int
-		lineWeight int
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   Rope
+		name      string
+		node      Rope
+		wantValue string
+		wantDepth int
 	}{
-		// TODO: Add test cases.
+		{
+			name:      "empty",
+			node:      newNode(FromString(""), FromString("")),
+			wantValue: "",
+			wantDepth: 2,
+		},
+		{
+			name: "left",
+			node: newNode(
+				newNode(
+					newNode(
+						FromString("abc"),
+						newNode(
+							FromString("def"),
+							newNode(
+								FromString("ghi"),
+								newNode(
+									FromString("jkl"),
+									newNode(
+										FromString("mno"),
+										FromString("pqr"),
+									),
+								),
+							),
+						),
+					),
+					FromString("uvw"),
+				),
+				FromString("xyz"),
+			),
+			wantValue: "abcdefghijklmnopqruvwxyz",
+			wantDepth: 4,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := Node{
-				left:       tt.fields.left,
-				right:      tt.fields.right,
-				weight:     tt.fields.weight,
-				lineWeight: tt.fields.lineWeight,
-			}
-			assert.Equalf(t, tt.want, n.Balance(), "Balance()")
+			balanced := tt.node.Balance()
+			assert.Equal(t, tt.wantValue, balanced.String())
+			assert.Equal(t, tt.wantDepth, balanced.Depth())
 		})
 	}
 }
@@ -538,94 +561,126 @@ func TestNode_Prepend(t *testing.T) {
 }
 
 func TestNode_Split(t *testing.T) {
-	type fields struct {
-		left       Rope
-		right      Rope
-		weight     int
-		lineWeight int
-	}
-	type args struct {
-		at int
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Rope
-		want1  Rope
+		name  string
+		node  Rope
+		at    int
+		want1 string
+		want2 string
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "split empty",
+			node:  newNode(FromString(""), FromString("")),
+			at:    0,
+			want1: "",
+			want2: "",
+		},
+		{
+			name:  "split left-leaf",
+			node:  newNode(FromString("abc"), FromString("def")),
+			at:    1,
+			want1: "a",
+			want2: "bcdef",
+		},
+		{
+			name:  "split right-leaf",
+			node:  newNode(FromString("abc"), FromString("def")),
+			at:    4,
+			want1: "abcd",
+			want2: "ef",
+		},
+		{
+			name:  "split at end",
+			node:  newNode(FromString("abc"), FromString("def")),
+			at:    6,
+			want1: "abcdef",
+			want2: "",
+		},
+		{
+			name:  "after end",
+			node:  newNode(FromString("abc"), FromString("def")),
+			at:    7,
+			want1: "abcdef",
+			want2: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := Node{
-				left:       tt.fields.left,
-				right:      tt.fields.right,
-				weight:     tt.fields.weight,
-				lineWeight: tt.fields.lineWeight,
-			}
-			got, got1 := n.Split(tt.args.at)
-			assert.Equalf(t, tt.want, got, "Split(%v)", tt.args.at)
-			assert.Equalf(t, tt.want1, got1, "Split(%v)", tt.args.at)
+			got1, got2 := tt.node.Split(tt.at)
+			assert.Equal(t, tt.want1, got1.String())
+			assert.Equal(t, tt.want2, got2.String())
 		})
 	}
 }
 
 func TestNode_String(t *testing.T) {
-	type fields struct {
-		left       Rope
-		right      Rope
-		weight     int
-		lineWeight int
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   string
+		name string
+		node Rope
+		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "empty",
+			node: newNode(FromString(""), FromString("")),
+			want: "",
+		},
+		{
+			name: "one line",
+			node: newNode(FromString("abc"), FromString("def")),
+			want: "abcdef",
+		},
+		{
+			name: "two lines",
+			node: newNode(FromString("abc"), FromString("def").Append(FromString("ghi"))),
+			want: "abcdefghi",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := Node{
-				left:       tt.fields.left,
-				right:      tt.fields.right,
-				weight:     tt.fields.weight,
-				lineWeight: tt.fields.lineWeight,
-			}
-			assert.Equalf(t, tt.want, n.String(), "String()")
+			assert.Equal(t, tt.want, tt.node.String())
 		})
 	}
 }
 
 func TestNode_Sub(t *testing.T) {
-	type fields struct {
-		left       Rope
-		right      Rope
-		weight     int
-		lineWeight int
-	}
-	type args struct {
-		start int
-		end   int
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Rope
+		name       string
+		node       Rope
+		start, end int
+		want       string
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "empty",
+			node:  newNode(FromString(""), FromString("")),
+			start: 0,
+			end:   0,
+			want:  "",
+		},
+		{
+			name:  "one line",
+			node:  newNode(FromString("abc"), FromString("def")),
+			start: 1,
+			end:   4,
+			want:  "bcd",
+		},
+		{
+			name:  "end > start",
+			node:  newNode(FromString("abc"), FromString("def")),
+			start: 4,
+			end:   1,
+			want:  "",
+		},
+		{
+			name:  "leaf and branch",
+			node:  newNode(FromString("abc"), FromString("def").Append(FromString("ghi"))),
+			start: 1,
+			end:   7,
+			want:  "bcdefg",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := Node{
-				left:       tt.fields.left,
-				right:      tt.fields.right,
-				weight:     tt.fields.weight,
-				lineWeight: tt.fields.lineWeight,
-			}
-			assert.Equalf(t, tt.want, n.Sub(tt.args.start, tt.args.end), "Sub(%v, %v)", tt.args.start, tt.args.end)
+			assert.Equal(t, tt.want, tt.node.Sub(tt.start, tt.end).String())
 		})
 	}
 }
