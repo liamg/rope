@@ -72,17 +72,20 @@ func FromFile(path string) (Rope, error) {
 
 // FromReader reads a reader into a rope.
 func FromReader(r io.Reader) (Rope, error) {
+	if r == nil {
+		return nil, fmt.Errorf("reader is nil")
+	}
 	// pessimistically allocate enough room for 1:1 ratio of byte:rune
 	data := make([]rune, 0, bufio.NewReader(r).Size())
 	for {
 		s, err := bufio.NewReader(r).ReadString(0)
+		data = append(data, []rune(s)...)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			return nil, err
 		}
-		data = append(data, []rune(s)...)
 	}
 	return newLeaf(data), nil
 }

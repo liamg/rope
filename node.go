@@ -9,7 +9,6 @@ type Node struct {
 }
 
 func newNode(l, r Rope) Rope {
-	// TODO: calculate weights, lines and stuff here
 	return &Node{
 		left:       l,
 		right:      r,
@@ -27,10 +26,16 @@ func (n Node) Length() int {
 }
 
 func (n Node) Append(r Rope) Rope {
+	if n.Length()+r.Length() <= maxLeafSize {
+		return newLeaf(append(n.Data(), r.Data()...))
+	}
 	return newNode(n, r)
 }
 
 func (n Node) Prepend(r Rope) Rope {
+	if n.Length()+r.Length() <= maxLeafSize {
+		return newLeaf(append(r.Data(), n.Data()...))
+	}
 	return newNode(r, n)
 }
 
@@ -77,14 +82,20 @@ func (n Node) Index(r rune) int {
 	if index := n.left.Index(r); index >= 0 {
 		return index
 	}
-	return n.weight + n.right.Index(r)
+	if index := n.right.Index(r); index >= 0 {
+		return n.weight + index
+	}
+	return -1
 }
 
 func (n Node) LastIndex(r rune) int {
 	if index := n.right.LastIndex(r); index >= 0 {
 		return n.weight + index
 	}
-	return n.left.LastIndex(r)
+	if index := n.left.LastIndex(r); index >= 0 {
+		return index
+	}
+	return -1
 }
 
 func (n Node) At(i int) rune {

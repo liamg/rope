@@ -52,6 +52,12 @@ func (l Leaf) Sub(start, end int) Rope {
 	if start < 0 {
 		start = 0
 	}
+	if start > len(l.data) {
+		start = len(l.data)
+	}
+	if end < 0 {
+		end = 0
+	}
 	if end > len(l.data) {
 		end = len(l.data)
 	}

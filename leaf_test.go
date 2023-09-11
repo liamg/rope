@@ -8,9 +8,6 @@ import (
 )
 
 func TestLeaf_Append(t *testing.T) {
-	type args struct {
-		n Rope
-	}
 	tests := []struct {
 		name      string
 		start     []rune
@@ -370,122 +367,203 @@ func TestLeaf_NewLineCount(t *testing.T) {
 }
 
 func TestLeaf_Prepend(t *testing.T) {
-	type fields struct {
-		data []rune
-	}
-	type args struct {
-		n Rope
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Rope
+		name      string
+		start     []rune
+		prepends  []string
+		want      string
+		wantDepth int
 	}{
-		// TODO: Add test cases.
+		{
+			name:      "prepend to empty",
+			start:     []rune{},
+			prepends:  []string{"a", "b", "c"},
+			want:      "cba",
+			wantDepth: 1,
+		},
+		{
+			name:      "prepend to non-empty",
+			start:     []rune("abc"),
+			prepends:  []string{"d", "e", "f"},
+			want:      "fedabc",
+			wantDepth: 1,
+		},
+		{
+			name:      "prepend to non-empty with max length",
+			start:     []rune(strings.Repeat("a", maxLeafSize)),
+			prepends:  []string{"b", "c", "d"},
+			want:      "dcb" + strings.Repeat("a", maxLeafSize),
+			wantDepth: 4,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := Leaf{
-				data: tt.fields.data,
+			l := newLeaf(tt.start)
+			for _, a := range tt.prepends {
+				l = l.Prepend(newLeaf([]rune(a)))
 			}
-			assert.Equalf(t, tt.want, l.Prepend(tt.args.n), "Prepend(%v)", tt.args.n)
+			assert.Equalf(t, tt.want, l.String(), "Prepend %s", tt.prepends)
+			assert.Equalf(t, tt.wantDepth, l.Depth(), "Depth() after append")
 		})
 	}
 }
 
 func TestLeaf_Split(t *testing.T) {
-	type fields struct {
-		data []rune
-	}
-	type args struct {
-		at int
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Rope
-		want1  Rope
+		name  string
+		input string
+		at    int
+		want1 string
+		want2 string
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "empty",
+			input: "",
+			at:    0,
+			want1: "",
+			want2: "",
+		},
+		{
+			name:  "split at -1",
+			input: "abc",
+			at:    -1,
+			want1: "",
+			want2: "abc",
+		},
+		{
+			name:  "split at 0",
+			input: "abc",
+			at:    0,
+			want1: "",
+			want2: "abc",
+		},
+		{
+			name:  "split at 1",
+			input: "abc",
+			at:    1,
+			want1: "a",
+			want2: "bc",
+		},
+		{
+			name:  "split at 2",
+			input: "abc",
+			at:    2,
+			want1: "ab",
+			want2: "c",
+		},
+		{
+			name:  "split past end",
+			input: "abc",
+			at:    5,
+			want1: "abc",
+			want2: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := Leaf{
-				data: tt.fields.data,
-			}
-			got, got1 := l.Split(tt.args.at)
-			assert.Equalf(t, tt.want, got, "Split(%v)", tt.args.at)
-			assert.Equalf(t, tt.want1, got1, "Split(%v)", tt.args.at)
+			l := newLeaf([]rune(tt.input))
+			got, got1 := l.Split(tt.at)
+			assert.Equal(t, tt.want1, got.String())
+			assert.Equal(t, tt.want2, got1.String())
 		})
 	}
 }
 
 func TestLeaf_String(t *testing.T) {
-	type fields struct {
-		data []rune
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   string
+		name  string
+		value string
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "empty",
+			value: "",
+		},
+		{
+			name:  "1",
+			value: "a",
+		},
+		{
+			name:  "multi lines",
+			value: "a\nb\nc",
+		},
+		{
+			name:  "emoji",
+			value: "this is a thumb-up em oji: 👍 - did it work?",
+		},
+		{
+			name:  "null bytes",
+			value: "this is a null byte: \x00 - did it work?",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := Leaf{
-				data: tt.fields.data,
-			}
-			assert.Equalf(t, tt.want, l.String(), "String()")
+			l := newLeaf([]rune(tt.value))
+			assert.Equal(t, tt.value, l.String())
 		})
 	}
 }
 
 func TestLeaf_Sub(t *testing.T) {
-	type fields struct {
-		data []rune
-	}
-	type args struct {
-		start int
-		end   int
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Rope
+		name       string
+		input      string
+		start, end int
+		want       string
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "empty",
+			input: "",
+			start: 0,
+			end:   0,
+			want:  "",
+		},
+		{
+			name:  "start past end",
+			input: "abc",
+			start: 5,
+			end:   10,
+			want:  "",
+		},
+		{
+			name:  "end past end",
+			input: "abc",
+			start: 0,
+			end:   5,
+			want:  "abc",
+		},
+		{
+			name:  "start after beginning",
+			input: "abc",
+			start: 1,
+			end:   3,
+			want:  "bc",
+		},
+		{
+			name:  "start at beginning",
+			input: "abc",
+			start: 0,
+			end:   1,
+			want:  "a",
+		},
+		{
+			name:  "start at beginning, end at end",
+			input: "abc",
+			start: 0,
+			end:   3,
+			want:  "abc",
+		},
+		{
+			name:  "start == end",
+			input: "abc",
+			start: 1,
+			end:   1,
+			want:  "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := Leaf{
-				data: tt.fields.data,
-			}
-			assert.Equalf(t, tt.want, l.Sub(tt.args.start, tt.args.end), "Sub(%v, %v)", tt.args.start, tt.args.end)
-		})
-	}
-}
-
-func TestLeaf_leaves(t *testing.T) {
-	type fields struct {
-		data []rune
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   []Rope
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := Leaf{
-				data: tt.fields.data,
-			}
-			assert.Equalf(t, tt.want, l.leaves(), "leaves()")
+			l := newLeaf([]rune(tt.input))
+			assert.Equal(t, tt.want, l.Sub(tt.start, tt.end).String())
 		})
 	}
 }
