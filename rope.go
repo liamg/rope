@@ -60,7 +60,7 @@ type Rope interface {
 func FromFile(path string) (Rope, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening file: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 	r, err := FromReader(f)
@@ -84,7 +84,7 @@ func FromReader(r io.Reader) (Rope, error) {
 			if err == io.EOF {
 				break
 			}
-			return nil, err
+			return nil, fmt.Errorf("error reading: %w", err)
 		}
 	}
 	return newLeaf(data), nil
