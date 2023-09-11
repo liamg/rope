@@ -51,6 +51,7 @@ type Rope interface {
 	NewLineCount() int
 	Balance() Rope
 	Depth() int
+	Data() []rune
 
 	leaves() []Rope
 }
@@ -59,7 +60,7 @@ type Rope interface {
 func FromFile(path string) (Rope, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening file: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 	r, err := FromReader(f)
@@ -71,33 +72,30 @@ func FromFile(path string) (Rope, error) {
 
 // FromReader reads a reader into a rope.
 func FromReader(r io.Reader) (Rope, error) {
+	if r == nil {
+		return nil, fmt.Errorf("reader is nil")
+	}
 	// pessimistically allocate enough room for 1:1 ratio of byte:rune
 	data := make([]rune, 0, bufio.NewReader(r).Size())
 	for {
 		s, err := bufio.NewReader(r).ReadString(0)
+		data = append(data, []rune(s)...)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			return nil, err
+			return nil, fmt.Errorf("error reading: %w", err)
 		}
-		data = append(data, []rune(s)...)
 	}
-	return &Leaf{
-		data: data,
-	}, nil
+	return newLeaf(data), nil
 }
 
 // FromString creates a rope from a string.
 func FromString(s string) Rope {
-	return (&Leaf{
-		data: []rune(s),
-	}).Balance()
+	return newLeaf([]rune(s))
 }
 
-// FromRunes creates a rope from a slice of runes.
+// FromRune creates a rope from a single rune
 func FromRune(r rune) Rope {
-	return &Leaf{
-		data: []rune{r},
-	}
+	return newLeaf([]rune{r})
 }
